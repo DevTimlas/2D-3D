@@ -1,8 +1,10 @@
 from flask import Flask, request, send_file
 from gradio_client import Client, handle_file
 import os
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 # Gradio Client setup
 client = Client("ohamidli/2D-3D", hf_token='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')
