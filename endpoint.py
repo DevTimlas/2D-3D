@@ -9,7 +9,7 @@ CORS(app)
 
 UPLOAD_FOLDER = './uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 def allowed_file(filename):
     """Check if the uploaded file has an allowed extension."""
@@ -28,7 +28,7 @@ def predict_human():
     if file.filename == '':
         return "No selected file", 400
     if not allowed_file(file.filename):
-        return "Invalid file type. Only PNG, JPG, and JPEG are allowed.", 400
+        return "Invalid file type. Only PNG, JPG, WEBP, and JPEG are allowed.", 400
 
     filename = secure_filename(file.filename)
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -47,7 +47,7 @@ def predict_garment():
     if file.filename == '':
         return "No selected file", 400
     if not allowed_file(file.filename):
-        return "Invalid file type. Only PNG, JPG, and JPEG are allowed.", 400
+        return "Invalid file type. Only PNG, JPG, WEBP and JPEG are allowed.", 400
 
     filename = secure_filename(file.filename)
     file_path = os.path.join(UPLOAD_FOLDER, filename)
