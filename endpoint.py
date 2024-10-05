@@ -4,6 +4,7 @@ import os
 import time  # For handling time calculations
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+from rich import print
 
 app = Flask(__name__)
 CORS(app)
