@@ -63,7 +63,6 @@ def predict_human():
     try:
         # Get the result from the model
         human_obj_file = client.predict(image=handle_file(file_path), api_name="/predict").strip().strip('"')
-        pri
         update_last_request_time()  # Update the time of the request
         return send_file(human_obj_file, as_attachment=True)
     except Exception as e:
