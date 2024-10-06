@@ -17,7 +17,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 human_obj_file = None
 garment_obj_file = None
-last_request_time = None  # To track the last time a request was processed
+last_gpu_error_time = None  # To track the last time a GPU quota error occurred
 cooldown_period = 5 * 60  # 5 minutes cooldown period in seconds
 
 def allowed_file(filename):
@@ -27,25 +27,25 @@ def allowed_file(filename):
 # Gradio Client setup
 client = Client("ohamidli/2D-3D", hf_token='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')
 
-def is_within_cooldown():
-    """Check if the request is within the cooldown period."""
-    global last_request_time
-    if last_request_time is None:
-        return False  # First request, no cooldown applied
-    return time.time() - last_request_time < cooldown_period
+def is_within_gpu_quota_cooldown():
+    """Check if a GPU quota error happened within the last 5 minutes."""
+    global last_gpu_error_time
+    if last_gpu_error_time is None:
+        return False  # No GPU quota error has occurred yet
+    return time.time() - last_gpu_error_time < cooldown_period
 
-def update_last_request_time():
-    """Update the time of the last request."""
-    global last_request_time
-    last_request_time = time.time()
+def update_gpu_error_time():
+    """Update the time of the last GPU quota error."""
+    global last_gpu_error_time
+    last_gpu_error_time = time.time()
 
 # Endpoint for human image prediction and .obj download
 @app.route('/predict_human', methods=['POST'])
 def predict_human():
     global human_obj_file
 
-    if is_within_cooldown():
-        return "Please wait few minutes before making another request.", 429
+    if is_within_gpu_quota_cooldown():
+        return "GPU quota exceeded. Please wait a few minutes before making another request.", 429
 
     print("Received request!")
     if 'image' not in request.files:
@@ -63,11 +63,11 @@ def predict_human():
     try:
         # Get the result from the model
         human_obj_file = client.predict(image=handle_file(file_path), api_name="/predict").strip().strip('"')
-        update_last_request_time()  # Update the time of the request
         return send_file(human_obj_file, as_attachment=True)
     except Exception as e:
         if "exceeded your GPU quota" in str(e):
-            return "GPU quota exceeded. Please try again in few minutes.", 429
+            update_gpu_error_time()  # Update the time if GPU quota error occurs
+            return "GPU quota exceeded. Please try again in a few minutes.", 429
         else:
             print(f"Error during prediction: {str(e)}")
             return "Prediction failed due to an internal error.", 500
@@ -77,8 +77,8 @@ def predict_human():
 def predict_garment():
     global garment_obj_file
 
-    if is_within_cooldown():
-        return "Please wait few minutes before making another request.", 429
+    if is_within_gpu_quota_cooldown():
+        return "GPU quota exceeded. Please wait a few minutes before making another request.", 429
 
     if 'image' not in request.files:
         return "No file part", 400
@@ -95,11 +95,11 @@ def predict_garment():
     try:
         # Get the result from the model
         garment_obj_file = client.predict(image=handle_file(file_path), api_name="/predict_1").strip().strip('"')
-        update_last_request_time()  # Update the time of the request
         return send_file(garment_obj_file, as_attachment=True)
     except Exception as e:
         if "exceeded your GPU quota" in str(e):
-            return "GPU quota exceeded. Please try again in few minutes.", 429
+            update_gpu_error_time()  # Update the time if GPU quota error occurs
+            return "GPU quota exceeded. Please try again in a few minutes.", 429
         else:
             print(f"Error during prediction: {str(e)}")
             return "Prediction failed due to an internal error.", 500
@@ -112,16 +112,16 @@ def predict_drape():
     if garment_obj_file is None:
         return "Garment object file not generated. Please generate it first.", 400
 
-    if is_within_cooldown():
-        return "Please wait few minutes before making another request.", 429
+    if is_within_gpu_quota_cooldown():
+        return "GPU quota exceeded. Please wait a few minutes before making another request.", 429
 
     try:
-        result_path = client.predict(api_name="/predict_2").strip().strip('"')
-        update_last_request_time()  # Update the time of the request
+        result_path = client.predict(api_name="/predict_2").strip().strip('"') # 
         return send_file(result_path, as_attachment=True)
     except Exception as e:
         if "exceeded your GPU quota" in str(e):
-            return "GPU quota exceeded. Please try again in few minutes.", 429
+            update_gpu_error_time()  # Update the time if GPU quota error occurs
+            return "GPU quota exceeded. Please try again in a few minutes.", 429
         else:
             print(f"Error during prediction: {str(e)}")
             return "Failed to drape the models", 500
